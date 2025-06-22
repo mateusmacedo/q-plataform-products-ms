@@ -1,15 +1,20 @@
 package org.acme;
 
-import java.time.LocalDateTime;
-import java.util.Random;
+import java.net.URI;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import javax.enterprise.context.ApplicationScoped;
+import javax.inject.Inject;
+import javax.validation.ConstraintViolation;
 import javax.validation.Valid;
+import javax.validation.Validator;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 
 import org.eclipse.microprofile.openapi.annotations.Operation;
 import org.eclipse.microprofile.openapi.annotations.media.Content;
@@ -29,9 +34,15 @@ import lombok.extern.slf4j.Slf4j;
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 @Tag(name = "Produtos", description = "API para gerenciamento de produtos")
-@ApplicationScoped
 @Slf4j
+@ApplicationScoped
 public class ProductResource {
+
+    @Inject
+    Validator validator;
+
+    @Inject
+    ProductService productService;
 
     /**
      * Cria um novo produto.
@@ -43,17 +54,19 @@ public class ProductResource {
     @Operation(summary = "Cria um novo produto", description = "Cria um novo produto com os dados fornecidos")
     @APIResponses({
             @APIResponse(responseCode = "201", description = "Produto criado com sucesso", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ProductOutputDTO.class))),
-            @APIResponse(responseCode = "400", description = "Dados do produto inválidos"),
-            @APIResponse(responseCode = "422", description = "SKU já existe")
+            @APIResponse(responseCode = "400", description = "Dados do produto inválidos", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ProductErroDTO.class))),
+            @APIResponse(responseCode = "409", description = "SKU já existe ou nome já existe", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ProductErroDTO.class))),
+            @APIResponse(responseCode = "500", description = "Erro interno do servidor", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ProductErroDTO.class)))
     })
-    public Uni<ProductOutputDTO> createProduct(@Valid ProductInputDTO product) {
-        return Uni.createFrom().item(new ProductOutputDTO(
-            new Random().nextLong(),
-            product.getSku(),
-            product.getName(),
-            LocalDateTime.now(),
-            LocalDateTime.now()
-        ))
-        .invoke(productOutputDTO -> log.info("Produto criado: {}", productOutputDTO));
+    public Uni<Response> createProduct(ProductInputDTO product) {
+        Set<ConstraintViolation<ProductInputDTO>> violations = validator.validate(product);
+        if (!violations.isEmpty()) {
+            return Uni.createFrom().failure(new ProductValidationException(violations.stream()
+                    .map(ConstraintViolation::getMessage)
+                    .collect(Collectors.toList())));
+        }
+        return productService.create(product)
+                .onItem().transform(i -> Response.created(URI.create("/products/" + i.getSku())).entity(i).build());
+        
     }
 }

@@ -5,6 +5,7 @@ import static org.hamcrest.CoreMatchers.containsString;
 
 import javax.ws.rs.core.MediaType;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -14,22 +15,51 @@ import io.quarkus.test.junit.QuarkusTest;
 
 @QuarkusTest
 public class ProductResourceTest {
+    private final String BASE_URL = "/products";
+
+    private final String PRODUCT_SKU_INVALID = "12345678901%";
+    private final String PRODUCT_NAME_INVALID = "Product %";
+
+    private final String PRODUCT_SKU_BLANK = "";
+    private final String PRODUCT_NAME_BLANK = "";
+
+    private final String PRODUCT_SKU_MIN = "1234";
+    private final String PRODUCT_NAME_MIN = "Pr";
+
+    private final String PRODUCT_SKU_MAX = "1234567890123";
+    private final String PRODUCT_NAME_MAX = "Product 1234567890123456789012345678901234567890";
+
+    private final String PRODUCT_SKU_VALID = "123456789012";
+    private final String PRODUCT_NAME_VALID = "Product 1";
+
+    private final String PRODUCT_SKU_OBLIGATORY = "SKU é obrigatório";
+    private final String PRODUCT_NAME_OBLIGATORY = "Nome é obrigatório";
+
+    private final String PRODUCT_SKU_LENGTH = "SKU deve ter entre 5 e 12 caracteres";
+    private final String PRODUCT_NAME_LENGTH = "Nome deve ter entre 3 e 40 caracteres";
+
+    private final String PRODUCT_SKU_FORMAT = "SKU deve conter apenas letras maiúsculas, números e hífen";
+    private final String PRODUCT_NAME_FORMAT = "Nome deve conter apenas letras, números, espaços e hífen";
+
+    @BeforeEach
+    public void setup() {
+    }
 
     @Test
     public void testShouldReturnAnErrorWhenTryCreateAProductWithBlankSKU() {
         ObjectMapper objectMapper = new ObjectMapper();
-        ProductInputDTO product = new ProductInputDTO("", "Product 1");
+        ProductInputDTO product = new ProductInputDTO(PRODUCT_SKU_BLANK, PRODUCT_NAME_VALID);
         try {
             String json = objectMapper.writeValueAsString(product);
             given()
                     .contentType(MediaType.APPLICATION_JSON)
                     .body(json)
-                    .when().post("/products")
+                    .when().post(BASE_URL)
                     .then()
                     .statusCode(400)
-                    .body(containsString("SKU é obrigatório"))
-                    .body(containsString("SKU deve ter entre 5 e 12 caracteres"))
-                    .body(containsString("SKU deve conter apenas letras maiúsculas, números e hífen"));
+                    .body(containsString(PRODUCT_SKU_OBLIGATORY))
+                    .body(containsString(PRODUCT_SKU_LENGTH))
+                    .body(containsString(PRODUCT_SKU_FORMAT));
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }
@@ -38,16 +68,16 @@ public class ProductResourceTest {
     @Test
     public void testShouldReturnAnErrorWhenTryCreateAProductWithMinSKUFormat() {
         ObjectMapper objectMapper = new ObjectMapper();
-        ProductInputDTO product = new ProductInputDTO("1234", "Product 1");
+        ProductInputDTO product = new ProductInputDTO(PRODUCT_SKU_MIN, PRODUCT_NAME_VALID);
         try {
             String json = objectMapper.writeValueAsString(product);
             given()
                     .contentType(MediaType.APPLICATION_JSON)
                     .body(json)
-                    .when().post("/products")
+                    .when().post(BASE_URL)
                     .then()
                     .statusCode(400)
-                    .body(containsString("SKU deve ter entre 5 e 12 caracteres"));
+                    .body(containsString(PRODUCT_SKU_LENGTH));
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }
@@ -56,16 +86,16 @@ public class ProductResourceTest {
     @Test
     public void testShouldReturnAnErrorWhenTryCreateAProductWithMaxSKUFormat() {
         ObjectMapper objectMapper = new ObjectMapper();
-        ProductInputDTO product = new ProductInputDTO("1234567890123", "Product 1");
+        ProductInputDTO product = new ProductInputDTO(PRODUCT_SKU_MAX, PRODUCT_NAME_VALID);
         try {
             String json = objectMapper.writeValueAsString(product);
             given()
                     .contentType(MediaType.APPLICATION_JSON)
                     .body(json)
-                    .when().post("/products")
+                    .when().post(BASE_URL)
                     .then()
                     .statusCode(400)
-                    .body(containsString("SKU deve ter entre 5 e 12 caracteres"));
+                    .body(containsString(PRODUCT_SKU_LENGTH));
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }
@@ -74,16 +104,16 @@ public class ProductResourceTest {
     @Test
     public void testShouldReturnAnErrorWhenTryCreateAProductWithInvalidSKUFormat() {
         ObjectMapper objectMapper = new ObjectMapper();
-        ProductInputDTO product = new ProductInputDTO("12345678901%", "Product 1");
+        ProductInputDTO product = new ProductInputDTO(PRODUCT_SKU_INVALID, PRODUCT_NAME_VALID);
         try {
             String json = objectMapper.writeValueAsString(product);
             given()
                     .contentType(MediaType.APPLICATION_JSON)
                     .body(json)
-                    .when().post("/products")
+                    .when().post(BASE_URL)
                     .then()
                     .statusCode(400)
-                    .body(containsString("SKU deve conter apenas letras maiúsculas, números e hífen"));
+                    .body(containsString(PRODUCT_SKU_FORMAT));
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }
@@ -92,18 +122,18 @@ public class ProductResourceTest {
     @Test
     public void testShouldReturnAnErrorWhenTryCreateAProductWithBlankName() {
         ObjectMapper objectMapper = new ObjectMapper();
-        ProductInputDTO product = new ProductInputDTO("123456789012", "");
+        ProductInputDTO product = new ProductInputDTO(PRODUCT_SKU_VALID, PRODUCT_NAME_BLANK);
         try {
             String json = objectMapper.writeValueAsString(product);
             given()
                     .contentType(MediaType.APPLICATION_JSON)
                     .body(json)
-                    .when().post("/products")
+                    .when().post(BASE_URL)
                     .then()
                     .statusCode(400)
-                    .body(containsString("Nome é obrigatório"))
-                    .body(containsString("Nome deve ter entre 3 e 40 caracteres"))
-                    .body(containsString("Nome deve conter apenas letras, números, espaços e hífen"));
+                    .body(containsString(PRODUCT_NAME_OBLIGATORY))
+                    .body(containsString(PRODUCT_NAME_LENGTH))
+                    .body(containsString(PRODUCT_NAME_FORMAT));
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }
@@ -112,16 +142,16 @@ public class ProductResourceTest {
     @Test
     public void testShouldReturnAnErrorWhenTryCreateAProductWithMinNameFormat() {
         ObjectMapper objectMapper = new ObjectMapper();
-        ProductInputDTO product = new ProductInputDTO("123456789012", "Pr");
+        ProductInputDTO product = new ProductInputDTO(PRODUCT_SKU_VALID, PRODUCT_NAME_MIN);
         try {
             String json = objectMapper.writeValueAsString(product);
             given()
                     .contentType(MediaType.APPLICATION_JSON)
                     .body(json)
-                    .when().post("/products")
+                    .when().post(BASE_URL)
                     .then()
                     .statusCode(400)
-                    .body(containsString("Nome deve ter entre 3 e 40 caracteres"));
+                    .body(containsString(PRODUCT_NAME_LENGTH));
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }
@@ -130,16 +160,16 @@ public class ProductResourceTest {
     @Test
     public void testShouldReturnAnErrorWhenTryCreateAProductWithMaxNameFormat() {
         ObjectMapper objectMapper = new ObjectMapper();
-        ProductInputDTO product = new ProductInputDTO("123456789012", "Product 1234567890123456789012345678901234567890");
+        ProductInputDTO product = new ProductInputDTO(PRODUCT_SKU_VALID, PRODUCT_NAME_MAX);
         try {
             String json = objectMapper.writeValueAsString(product);
             given()
                     .contentType(MediaType.APPLICATION_JSON)
                     .body(json)
-                    .when().post("/products")
+                    .when().post(BASE_URL)
                     .then()
                     .statusCode(400)
-                    .body(containsString("Nome deve ter entre 3 e 40 caracteres"));
+                    .body(containsString(PRODUCT_NAME_LENGTH));
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }
@@ -148,16 +178,53 @@ public class ProductResourceTest {
     @Test
     public void testShouldReturnAnErrorWhenTryCreateAProductWithInvalidNameFormat() {
         ObjectMapper objectMapper = new ObjectMapper();
-        ProductInputDTO product = new ProductInputDTO("123456789012", "Product %");
+        ProductInputDTO product = new ProductInputDTO(PRODUCT_SKU_VALID, PRODUCT_NAME_INVALID);
         try {
             String json = objectMapper.writeValueAsString(product);
             given()
                     .contentType(MediaType.APPLICATION_JSON)
                     .body(json)
-                    .when().post("/products")
+                    .when().post(BASE_URL)
                     .then()
                     .statusCode(400)
-                    .body(containsString("Nome deve conter apenas letras, números, espaços e hífen"));
+                    .body(containsString(PRODUCT_NAME_FORMAT));
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Test
+    public void testShouldReturnSuccessWhenCreateAProduct() {
+        ObjectMapper objectMapper = new ObjectMapper();
+        ProductInputDTO product = new ProductInputDTO(PRODUCT_SKU_VALID, PRODUCT_NAME_VALID);
+        try {
+            String json = objectMapper.writeValueAsString(product);
+            given()
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(json)
+                    .when().post(BASE_URL)
+                    .then()
+                    .statusCode(201)
+                    .body(containsString("123456789012"))
+                    .body(containsString("Product 1"));
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Test
+    public void testShouldReturnAnErrorWhenTryCreateAProductWithAlreadyExistsSKU() {
+        ObjectMapper objectMapper = new ObjectMapper();
+        ProductInputDTO product = new ProductInputDTO(PRODUCT_SKU_VALID, PRODUCT_NAME_VALID);
+        try {
+            String json = objectMapper.writeValueAsString(product);
+            given()
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(json)
+                    .when().post(BASE_URL)
+                    .then()
+                    .statusCode(409)
+                    .body(containsString("Já existe um produto com o SKU 123456789012"));
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }
