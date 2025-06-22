@@ -1,0 +1,18 @@
+# Imagem base com Maven e Java 11
+FROM maven:3.8-openjdk-17 AS dev
+
+# Diretório de trabalho dentro do container
+WORKDIR /home/app
+
+# Copia apenas o pom.xml para baixar dependências offline
+COPY pom.xml ./
+RUN mvn dependency:go-offline -B
+
+# Copia o restante do código-fonte
+COPY src ./src
+
+# Porta exposta para o Quarkus Dev Mode e porta de debug
+EXPOSE 8080 5005
+
+# Comando padrão: inicia Quarkus em modo de desenvolvimento
+CMD ["mvn", "quarkus:dev", "-Dquarkus.http.host=0.0.0.0"]

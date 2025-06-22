@@ -1,21 +1,22 @@
 networks:
   docker:
-    driver: bridge
-    external:
-      name: docker
+    name: docker
+    external: true
 
 volumes:
   db_data:
+  m2-repo:
+    driver: local
 
 services:
-  db:
+  products-db:
     image: postgres:14
     container_name: products-db
     restart: unless-stopped
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: products_db
+      POSTGRES_DB: products
     ports:
       - "5432:5432"
     volumes:
@@ -23,12 +24,20 @@ services:
     networks:
       - docker
 
-  api:
-    container_name: products-api
-    build:
-      context: .
-      dockerfile: src/main/docker/Dockerfile.native-micro
-    ports:
-      - "8082:8080"
-    networks:
-      - docker
+  products-api-dev:
+      container_name: products-api-dev
+      build:
+        context: .
+        dockerfile: Dockerfile.dev
+      ports:
+        - "8082:8080"   # Quarkus HTTP
+        - "5005:5005"   # Debug remoto
+      volumes:
+        - ./:/home/app  # Monta código-fonte local para hot-reload
+        - m2-repo:/root/.m2  # Cache de dependências Maven
+      environment:
+        # Permite debugging remoto sem bloqueio no container
+        - JAVA_OPTS=-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005
+      command: ["mvn", "quarkus:dev", "-Dquarkus.http.host=0.0.0.0"]
+      networks:
+        - docker
