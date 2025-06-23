@@ -3,10 +3,18 @@ package org.acme;
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.containsString;
 
+import java.sql.Connection;
+import java.sql.Statement;
+
+import javax.inject.Inject;
+import javax.sql.DataSource;
 import javax.ws.rs.core.MediaType;
 
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -14,6 +22,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.test.junit.QuarkusTest;
 
 @QuarkusTest
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class ProductResourceTest {
     private final String BASE_URL = "/products";
 
@@ -30,7 +39,7 @@ public class ProductResourceTest {
     private final String PRODUCT_NAME_MAX = "Product 1234567890123456789012345678901234567890";
 
     private final String PRODUCT_SKU_VALID = "123456789012";
-    private final String PRODUCT_NAME_VALID = "Product 1";
+    private final String PRODUCT_NAME_VALID = "Product Dummy";
 
     private final String PRODUCT_SKU_OBLIGATORY = "SKU é obrigatório";
     private final String PRODUCT_NAME_OBLIGATORY = "Nome é obrigatório";
@@ -42,7 +51,8 @@ public class ProductResourceTest {
     private final String PRODUCT_NAME_FORMAT = "Nome deve conter apenas letras, números, espaços e hífen";
 
     @BeforeEach
-    public void setup() {
+    public void limparBanco() {
+        Product.deleteAll();
     }
 
     @Test
@@ -194,6 +204,7 @@ public class ProductResourceTest {
     }
 
     @Test
+    @Order(1)
     public void testShouldReturnSuccessWhenCreateAProduct() {
         ObjectMapper objectMapper = new ObjectMapper();
         ProductInputDTO product = new ProductInputDTO(PRODUCT_SKU_VALID, PRODUCT_NAME_VALID);
@@ -206,13 +217,14 @@ public class ProductResourceTest {
                     .then()
                     .statusCode(201)
                     .body(containsString("123456789012"))
-                    .body(containsString("Product 1"));
+                    .body(containsString("Product Dummy"));
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }
     }
 
     @Test
+    @Order(2)
     public void testShouldReturnAnErrorWhenTryCreateAProductWithAlreadyExistsSKU() {
         ObjectMapper objectMapper = new ObjectMapper();
         ProductInputDTO product = new ProductInputDTO(PRODUCT_SKU_VALID, PRODUCT_NAME_VALID);
