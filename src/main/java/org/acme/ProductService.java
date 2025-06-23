@@ -5,6 +5,9 @@ import javax.inject.Inject;
 
 import io.quarkus.hibernate.reactive.panache.Panache;
 import io.smallrye.mutiny.Uni;
+import org.eclipse.microprofile.reactive.messaging.Incoming;
+import io.smallrye.reactive.messaging.annotations.Blocking;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  * Serviço responsável pela lógica de negócios relacionada aos produtos.
@@ -15,6 +18,9 @@ public class ProductService {
 
     @Inject
     ProductRepository productRepository;
+
+    @Inject
+    ObjectMapper objectMapper;
 
     /**
      * Cria um novo produto.
@@ -40,5 +46,24 @@ public class ProductService {
         return productRepository.findBySku(sku)
                 .onItem().ifNull().failWith(new ProductNotFoundException(sku))
                 .map(product -> ProductOutputDTO.fromEntity((Product) product));
+    }
+
+    /**
+     * Consumer Kafka para criar produtos a partir do tópico 'products'.
+     * Espera mensagens JSON compatíveis com ProductInputDTO.
+     */
+    @Incoming("products-in")
+    @Blocking
+    public void consumeProduct(String message) {
+        try {
+            ProductInputDTO input = objectMapper.readValue(message, ProductInputDTO.class);
+            // Chama o método create, mas ignora o retorno pois é void
+            this.create(input).subscribe().with(
+                success -> {},
+                failure -> { /* logar erro se necessário */ }
+            );
+        } catch (Exception e) {
+            // logar erro de deserialização
+        }
     }
 }
