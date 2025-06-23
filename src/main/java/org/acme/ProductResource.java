@@ -10,8 +10,10 @@ import javax.validation.ConstraintViolation;
 import javax.validation.Valid;
 import javax.validation.Validator;
 import javax.ws.rs.Consumes;
+import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
@@ -59,14 +61,29 @@ public class ProductResource {
             @APIResponse(responseCode = "500", description = "Erro interno do servidor", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ProductErroDTO.class)))
     })
     public Uni<Response> createProduct(ProductInputDTO product) {
+
         Set<ConstraintViolation<ProductInputDTO>> violations = validator.validate(product);
         if (!violations.isEmpty()) {
             return Uni.createFrom().failure(new ProductValidationException(violations.stream()
                     .map(ConstraintViolation::getMessage)
                     .collect(Collectors.toList())));
-        }
+        } // TODO: Abstrair encapsulando a validação em um método
+
         return productService.create(product)
-                .onItem().transform(i -> Response.created(URI.create("/products/" + i.getSku())).entity(i).build());
-        
+                .onItem().transform(i -> Response.created(
+                        URI.create("/products/" + i.getSku()))
+                        .entity(i).build());
+    }
+
+    @GET
+    @Path("{sku}")
+    @Operation(summary = "Obtém um produto por SKU", description = "Obtém um produto por SKU")
+    @APIResponses({
+            @APIResponse(responseCode = "200", description = "Produto encontrado", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ProductOutputDTO.class))),
+            @APIResponse(responseCode = "404", description = "Produto não encontrado", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ProductErroDTO.class)))
+    })
+    public Uni<Response> getProductBySku(@PathParam("sku") String sku) {
+        return productService.getBySku(sku)
+                .onItem().transform(i -> Response.ok(i).build());
     }
 }

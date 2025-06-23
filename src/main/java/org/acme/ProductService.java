@@ -35,4 +35,10 @@ public class ProductService {
                             .map(productPersisted -> ProductOutputDTO.fromEntity((Product) productPersisted));
                 });
     }
+
+    public Uni<ProductOutputDTO> getBySku(String sku) {
+        return productRepository.findBySku(sku)
+                .onItem().ifNull().failWith(new ProductNotFoundException(sku))
+                .map(product -> ProductOutputDTO.fromEntity((Product) product));
+    }
 }

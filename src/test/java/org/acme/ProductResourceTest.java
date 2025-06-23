@@ -241,4 +241,15 @@ public class ProductResourceTest {
             throw new RuntimeException(e);
         }
     }
+
+    @Test
+    @Order(3)
+    public void testShouldReturnAnProductBySku() {
+        given()
+                .when().get(BASE_URL + "/" + PRODUCT_SKU_VALID)
+                .then()
+                .statusCode(200)
+                .body(containsString("123456789012"))
+                .body(containsString("Product Dummy"));
+    }
 }
