@@ -3,11 +3,6 @@ package org.acme;
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.containsString;
 
-import java.sql.Connection;
-import java.sql.Statement;
-
-import javax.inject.Inject;
-import javax.sql.DataSource;
 import javax.ws.rs.core.MediaType;
 
 import org.junit.jupiter.api.BeforeEach;
