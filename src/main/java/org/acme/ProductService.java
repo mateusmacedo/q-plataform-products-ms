@@ -3,17 +3,21 @@ package org.acme;
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 
+import org.eclipse.microprofile.reactive.messaging.Channel;
+import org.eclipse.microprofile.reactive.messaging.Emitter;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import io.quarkus.hibernate.reactive.panache.Panache;
 import io.smallrye.mutiny.Uni;
-import org.eclipse.microprofile.reactive.messaging.Incoming;
-import io.smallrye.reactive.messaging.annotations.Blocking;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Serviço responsável pela lógica de negócios relacionada aos produtos.
  * Implementa operações CRUD e validações de negócio.
  */
 @ApplicationScoped
+@Slf4j
 public class ProductService {
 
     @Inject
@@ -21,6 +25,10 @@ public class ProductService {
 
     @Inject
     ObjectMapper objectMapper;
+
+    @Inject
+    @Channel("products-out")
+    Emitter<String> productCreatedEventEmitter;
 
     /**
      * Cria um novo produto.
@@ -38,6 +46,14 @@ public class ProductService {
                                 new ProductAlreadyExistException(input.getSku(), input.getName()));
                     }
                     return Panache.withTransaction(new Product(input.getSku(), input.getName())::persist)
+                            .invoke(productPersisted -> {
+                                try{
+                                    final String productCreatedEvent = objectMapper.writeValueAsString(productPersisted);
+                                    productCreatedEventEmitter.send(productCreatedEvent);
+                                } catch (Exception e) {
+                                    log.error("Error serializing product created event: {}", e.getMessage());
+                                }
+                            })
                             .map(productPersisted -> ProductOutputDTO.fromEntity((Product) productPersisted));
                 });
     }
@@ -46,24 +62,5 @@ public class ProductService {
         return productRepository.findBySku(sku)
                 .onItem().ifNull().failWith(new ProductNotFoundException(sku))
                 .map(product -> ProductOutputDTO.fromEntity((Product) product));
-    }
-
-    /**
-     * Consumer Kafka para criar produtos a partir do tópico 'products'.
-     * Espera mensagens JSON compatíveis com ProductInputDTO.
-     */
-    @Incoming("products-in")
-    @Blocking
-    public void consumeProduct(String message) {
-        try {
-            ProductInputDTO input = objectMapper.readValue(message, ProductInputDTO.class);
-            // Chama o método create, mas ignora o retorno pois é void
-            this.create(input).subscribe().with(
-                success -> {},
-                failure -> { /* logar erro se necessário */ }
-            );
-        } catch (Exception e) {
-            // logar erro de deserialização
-        }
     }
 }
