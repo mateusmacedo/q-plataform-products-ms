@@ -45,4 +45,15 @@ public class Product extends PanacheEntity {
     void preUpdate() {
         this.updatedAt = LocalDateTime.now();
     }
+
+    @Override
+    public String toString() {
+        return "{" +
+                "id=" + id +
+                ",sku='" + sku + '\'' +
+                ",name='" + name + '\'' +
+                ",createdAt=" + createdAt +
+                ",updatedAt=" + updatedAt +
+                '}';
+    }
 }

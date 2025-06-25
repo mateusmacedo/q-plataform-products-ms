@@ -23,6 +23,7 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponses;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
+import org.jboss.logging.MDC;
 
 import io.smallrye.mutiny.Uni;
 import lombok.extern.slf4j.Slf4j;
@@ -71,7 +72,8 @@ public class ProductResource {
         return productService.create(product)
                 .onItem().transform(i -> Response.created(
                         URI.create("/products/" + i.getSku()))
-                        .entity(i).build());
+                        .entity(i).build())
+                        .invoke(MDC::clear);
     }
 
     @GET
