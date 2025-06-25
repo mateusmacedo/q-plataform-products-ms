@@ -48,7 +48,7 @@ public class ProductService {
                                 new ProductAlreadyExistException(input.getSku(), input.getName()));
                     }
                     return Panache.withTransaction(new Product(input.getSku(), input.getName())::persist)
-                            .invoke(productPersisted -> log.info("SENDING product={}, traceId={}", productPersisted,
+                            .invoke(productPersisted -> log.info("{}", productPersisted,
                                     MDC.get("X-Trace-Id")))
                             .invoke(productPersisted -> {
                                 productOutProducer.send(ProductOutputDTO.fromEntity((Product) productPersisted));
@@ -68,7 +68,7 @@ public class ProductService {
         var kafkaMetadata = message.getMetadata(IncomingKafkaRecordMetadata.class).orElse(null);
         String traceId = kafkaMetadata != null ? kafkaMetadata.getHeaders().lastHeader("X-Trace-Id") != null
             ? new String(kafkaMetadata.getHeaders().lastHeader("X-Trace-Id").value()) : null : null;
-        log.info("RECEIVED product={}, traceId={}", message.getPayload(), traceId);
+        log.info("{}", message.getPayload(), traceId);
         message.ack();
         return Uni.createFrom().voidItem();
     }
