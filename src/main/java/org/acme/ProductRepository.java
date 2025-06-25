@@ -9,7 +9,7 @@ import io.smallrye.mutiny.Uni;
 public class ProductRepository implements PanacheRepository<Product> {
 
     public Uni<Product> findBySkuOrName(String sku, String name) {
-        return find("sku = ?1 or name = ?2 and deletedAt is null", sku, name).firstResult();
+        return find("(sku = ?1 or name = ?2) and deletedAt is null", sku, name).firstResult();
     }
 
     public Uni<Product> findBySku(String sku) {

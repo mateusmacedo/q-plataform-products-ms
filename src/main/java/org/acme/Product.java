@@ -5,6 +5,7 @@ import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.PrePersist;
 import javax.persistence.PreUpdate;
+import javax.persistence.Version;
 import java.time.LocalDateTime;
 
 import io.quarkus.hibernate.reactive.panache.PanacheEntity;
@@ -27,6 +28,9 @@ public class Product extends PanacheEntity {
 
     @Column(name = "deleted_at")
     public LocalDateTime deletedAt;
+
+    @Version
+    public Long version;
 
     public Product() {
     }

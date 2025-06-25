@@ -9,12 +9,12 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class ProductErroDTO {
+public class ProductErrorDTO {
     private String message;
     private String errorCode;
     private List<String> details;
 
-    public static ProductErroDTO fromException(ApiException exception) {
-        return new ProductErroDTO(exception.getMessage(), exception.getErrorCode(), exception.getDetails());
+    public static ProductErrorDTO fromException(ApiException exception) {
+        return new ProductErrorDTO(exception.getMessage(), exception.getErrorCode(), exception.getDetails());
     }
 }

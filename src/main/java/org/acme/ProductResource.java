@@ -55,25 +55,29 @@ public class ProductResource {
     @POST
     @Operation(summary = "Cria um novo produto", description = "Cria um novo produto com os dados fornecidos")
     @APIResponses({
-            @APIResponse(responseCode = "201", description = "Produto criado com sucesso", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ProductOutputDTO.class))),
-            @APIResponse(responseCode = "400", description = "Dados do produto inválidos", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ProductErroDTO.class))),
-            @APIResponse(responseCode = "409", description = "SKU já existe ou nome já existe", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ProductErroDTO.class))),
-            @APIResponse(responseCode = "500", description = "Erro interno do servidor", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ProductErroDTO.class)))
+            @APIResponse(responseCode = "201", description = "Produto criado com sucesso", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ProductErrorDTO.class))),
+            @APIResponse(responseCode = "400", description = "Dados do produto inválidos", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ProductErrorDTO.class))),
+            @APIResponse(responseCode = "409", description = "SKU já existe ou nome já existe", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ProductErrorDTO.class))),
+            @APIResponse(responseCode = "500", description = "Erro interno do servidor", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ProductErrorDTO.class)))
     })
     public Uni<Response> createProduct(ProductInputDTO product) {
-
+        String traceId = MDC.get("X-Trace-Id") != null ? MDC.get("X-Trace-Id").toString() : "N/A";
+        log.info(String.format("[traceId=%s] Recebida requisição para criar produto: sku=%s, nome=%s", traceId, product.getSku(), product.getName()));
         Set<ConstraintViolation<ProductInputDTO>> violations = validator.validate(product);
         if (!violations.isEmpty()) {
+            log.warn(String.format("[traceId=%s] Falha de validação ao criar produto: %s", traceId, violations.stream().map(ConstraintViolation::getMessage).collect(Collectors.joining(", "))));
             return Uni.createFrom().failure(new ProductValidationException(violations.stream()
                     .map(ConstraintViolation::getMessage)
                     .collect(Collectors.toList())));
-        } // TODO: Abstrair encapsulando a validação em um método
-
+        }
         return productService.create(product)
-                .onItem().transform(i -> Response.created(
+                .onItem().transform(i -> {
+                    log.info(String.format("[traceId=%s] Produto criado com sucesso: sku=%s, nome=%s", traceId, i.getSku(), i.getName()));
+                    return Response.created(
                         URI.create("/products/" + i.getSku()))
-                        .entity(i).build())
-                        .invoke(MDC::clear);
+                        .entity(i).build();
+                })
+                .invoke(MDC::clear);
     }
 
     @GET
@@ -81,10 +85,15 @@ public class ProductResource {
     @Operation(summary = "Obtém um produto por SKU", description = "Obtém um produto por SKU")
     @APIResponses({
             @APIResponse(responseCode = "200", description = "Produto encontrado", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ProductOutputDTO.class))),
-            @APIResponse(responseCode = "404", description = "Produto não encontrado", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ProductErroDTO.class)))
+            @APIResponse(responseCode = "404", description = "Produto não encontrado", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ProductErrorDTO.class)))
     })
     public Uni<Response> getProductBySku(@PathParam("sku") String sku) {
+        String traceId = MDC.get("X-Trace-Id") != null ? MDC.get("X-Trace-Id").toString() : "N/A";
+        log.info(String.format("[traceId=%s] Recebida requisição para buscar produto por SKU: %s", traceId, sku));
         return productService.getBySku(sku)
-                .onItem().transform(i -> Response.ok(i).build());
+                .onItem().transform(i -> {
+                    log.info(String.format("[traceId=%s] Produto encontrado: sku=%s, nome=%s", traceId, i.getSku(), i.getName()));
+                    return Response.ok(i).build();
+                });
     }
 }

@@ -25,22 +25,23 @@ public class ProductOutProducer {
 
     public Uni<Void> send(ProductOutputDTO payload) {
         String traceId = getOrGenerate("X-Trace-Id");
-        RecordHeaders headers = new RecordHeaders();
-        headers.add("X-Trace-Id", traceId.getBytes(StandardCharsets.UTF_8));
-        // Adiciona traceparent para interoperabilidade W3C
-        // String traceparent = String.format("00-%s-0000000000000000-01", traceId.substring(0, 32));
-        // headers.add("traceparent", traceparent.getBytes(StandardCharsets.UTF_8));
-
-        emitter.send(
-            Message.of(payload)
-            .addMetadata(
-                OutgoingKafkaRecordMetadata.builder()
-                    .withHeaders(
-                        headers
-                    )
-                    .build()
-            )
-        );
+        log.info(String.format("[traceId=%s] Enviando mensagem para Kafka: id=%s, sku=%s, nome=%s", traceId, payload.getId(), payload.getSku(), payload.getName()));
+        try {
+            RecordHeaders headers = new RecordHeaders();
+            headers.add("X-Trace-Id", traceId.getBytes(StandardCharsets.UTF_8));
+            emitter.send(
+                Message.of(payload)
+                .addMetadata(
+                    OutgoingKafkaRecordMetadata.builder()
+                        .withHeaders(headers)
+                        .build()
+                )
+            );
+            log.info(String.format("[traceId=%s] Mensagem enviada com sucesso para Kafka: id=%s, sku=%s", traceId, payload.getId(), payload.getSku()));
+        } catch (Exception e) {
+            log.error(String.format("[traceId=%s] Falha ao enviar mensagem para Kafka: id=%s, sku=%s, erro=%s", traceId, payload.getId(), payload.getSku(), e.getMessage()), e);
+            return Uni.createFrom().failure(e);
+        }
         return Uni.createFrom().voidItem();
     }
 

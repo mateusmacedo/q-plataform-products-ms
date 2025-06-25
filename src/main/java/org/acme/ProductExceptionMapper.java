@@ -3,6 +3,7 @@ package org.acme;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.ExceptionMapper;
 import javax.ws.rs.ext.Provider;
+import javax.ws.rs.core.MediaType;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -15,14 +16,10 @@ public class ProductExceptionMapper {
     public static class ProductNotFoundExceptionMapper implements ExceptionMapper<ProductNotFoundException> {
         @Override
         public Response toResponse(ProductNotFoundException exception) {
-
-            ObjectNode errorJson = createErrorJson(exception);
-            errorJson.put("errorCode", "PRODUCT_NOT_FOUND");
-            ArrayNode details = errorJson.putArray("details");
-            exception.getDetails().forEach(detail -> details.add(detail));
-
+            ProductErrorDTO error = ProductErrorDTO.fromException(exception);
             return Response.status(404)
-                    .entity(errorJson)
+                    .entity(error)
+                    .type(MediaType.APPLICATION_JSON)
                     .build();
         }
     }
@@ -31,14 +28,10 @@ public class ProductExceptionMapper {
     public static class ProductValidationExceptionMapper implements ExceptionMapper<ProductValidationException> {
         @Override
         public Response toResponse(ProductValidationException exception) {
-
-            ObjectNode errorJson = createErrorJson(exception);
-            errorJson.put("errorCode", "PRODUCT_VALIDATION_ERROR");
-            ArrayNode validationErrors = errorJson.putArray("details");
-            exception.getErrors().forEach(error -> validationErrors.add(error));
-
+            ProductErrorDTO error = ProductErrorDTO.fromException(exception);
             return Response.status(400)
-                    .entity(errorJson)
+                    .entity(error)
+                    .type(MediaType.APPLICATION_JSON)
                     .build();
         }
     }
@@ -47,13 +40,10 @@ public class ProductExceptionMapper {
     public static class ProductAlreadyExistExceptionMapper implements ExceptionMapper<ProductAlreadyExistException> {
         @Override
         public Response toResponse(ProductAlreadyExistException exception) {
-            ObjectNode errorJson = createErrorJson(exception);  
-            errorJson.put("errorCode", "PRODUCT_ALREADY_EXISTS");
-            ArrayNode details = errorJson.putArray("details");
-            exception.getDetails().forEach(detail -> details.add(detail));
-
+            ProductErrorDTO error = ProductErrorDTO.fromException(exception);
             return Response.status(409)
-                    .entity(errorJson)
+                    .entity(error)
+                    .type(MediaType.APPLICATION_JSON)
                     .build();
         }
     }
@@ -62,21 +52,16 @@ public class ProductExceptionMapper {
     public static class InternalServerErrorExceptionMapper implements ExceptionMapper<Exception> {
         @Override
         public Response toResponse(Exception exception) {
-            ObjectNode errorJson = createErrorJson(exception);
-            errorJson.put("errorCode", "INTERNAL_SERVER_ERROR");
-            ArrayNode details = errorJson.putArray("details");
-            details.add(exception.getMessage());
-
+            ProductErrorDTO error = new ProductErrorDTO(
+                "Erro interno do servidor",
+                "INTERNAL_SERVER_ERROR",
+                java.util.List.of(exception.getMessage())
+            );
+            exception.printStackTrace(); // Logar stacktrace para troubleshooting
             return Response.status(500)
-                    .entity(errorJson)
+                    .entity(error)
+                    .type(MediaType.APPLICATION_JSON)
                     .build();
         }
-    }
-
-    private static ObjectNode createErrorJson(Exception exception) {
-        ObjectMapper mapper = new ObjectMapper();
-        ObjectNode errorJson = mapper.createObjectNode();
-        errorJson.put("message", exception.getMessage());
-        return errorJson;
     }
 }
