@@ -7,12 +7,16 @@ volumes:
   db_data:
   m2-repo:
     driver: local
+    driver_opts:
+        type: none
+        device: /home/mateusanjos/.m2/repository
+        o: bind
 
 services:
   products-db:
+    restart: unless-stopped
     image: postgres:14
     container_name: products-db
-    restart: unless-stopped
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
@@ -25,6 +29,7 @@ services:
       - docker
 
   products-api-dev:
+      restart: unless-stopped
       container_name: products-api-dev
       build:
         context: .
