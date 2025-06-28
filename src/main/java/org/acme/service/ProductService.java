@@ -11,8 +11,6 @@ import org.acme.exception.ProductValidationException;
 import org.acme.model.Product;
 import org.acme.producer.ProductOutProducer;
 import org.acme.repository.ProductRepository;
-import org.eclipse.microprofile.reactive.messaging.Incoming;
-import org.eclipse.microprofile.reactive.messaging.Message;
 import org.jboss.logging.Logger;
 import org.jboss.logging.MDC;
 
@@ -20,7 +18,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.quarkus.hibernate.reactive.panache.Panache;
 import io.smallrye.mutiny.Uni;
-import io.smallrye.reactive.messaging.kafka.api.IncomingKafkaRecordMetadata;
 
 /**
  * Serviço responsável pela lógica de negócios relacionada aos produtos.
@@ -83,22 +80,5 @@ public class ProductService {
                     return new ProductNotFoundException(sku);
                 })
                 .map(product -> ProductOutputDTO.fromEntity((Product) product));
-    }
-
-    @Incoming("products-in")
-    public Uni<Void> consume(Message<String> message) {
-        var kafkaMetadata = message.getMetadata(IncomingKafkaRecordMetadata.class).orElse(null);
-        String traceId = kafkaMetadata != null && kafkaMetadata.getHeaders().lastHeader("X-Trace-Id") != null
-                ? new String(kafkaMetadata.getHeaders().lastHeader("X-Trace-Id").value())
-                : "N/A";
-        try {
-            ProductOutputDTO payload = objectMapper.readValue(message.getPayload(), ProductOutputDTO.class);
-            log.infof("[traceId=%s] Mensagem recebida do Kafka: id=%s, sku=%s, nome=%s", traceId, payload.getId(), payload.getSku(), payload.getName());
-            message.ack();
-        } catch (Exception e) {
-            log.errorf("[traceId=%s] Falha ao processar mensagem do Kafka: %s", traceId, e.getMessage());
-            return Uni.createFrom().failure(e);
-        }
-        return Uni.createFrom().voidItem();
     }
 }
