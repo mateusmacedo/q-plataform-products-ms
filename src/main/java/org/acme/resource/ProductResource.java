@@ -66,23 +66,22 @@ public class ProductResource {
             @APIResponse(responseCode = "500", description = "Erro interno do servidor", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ProductErrorDTO.class)))
     })
     public Uni<Response> createProduct(ProductInputDTO product) {
-        String traceId = MDC.get("X-Trace-Id") != null ? MDC.get("X-Trace-Id").toString() : "N/A";
-        log.info(String.format("[traceId=%s] Recebida requisição para criar produto: sku=%s, nome=%s", traceId, product.getSku(), product.getName()));
+        log.info(String.format("Recebida requisição para criar produto: sku=%s, nome=%s", product.getSku(), product.getName()));
         Set<ConstraintViolation<ProductInputDTO>> violations = validator.validate(product);
-        if (!violations.isEmpty()) {
-            log.warn(String.format("[traceId=%s] Falha de validação ao criar produto: %s", traceId, violations.stream().map(ConstraintViolation::getMessage).collect(Collectors.joining(", "))));
-            return Uni.createFrom().failure(new ProductValidationException(violations.stream()
-                    .map(ConstraintViolation::getMessage)
-                    .collect(Collectors.toList())));
-        }
-        return productService.create(product)
+        if (violations.isEmpty()) {
+            return productService.create(product)
                 .onItem().transform(i -> {
-                    log.info(String.format("[traceId=%s] Produto criado com sucesso: sku=%s, nome=%s", traceId, i.getSku(), i.getName()));
+                    log.info(String.format("Produto criado com sucesso: sku=%s, nome=%s", i.getSku(), i.getName()));
                     return Response.created(
                         URI.create("/products/" + i.getSku()))
                         .entity(i).build();
-                })
-                .invoke(MDC::clear);
+                });
+        }
+        log.warn(String.format("Falha de validação ao criar produto: %s", violations.stream().map(ConstraintViolation::getMessage).collect(Collectors.joining(", "))));
+            return Uni.createFrom().failure(new ProductValidationException(violations.stream()
+                    .map(ConstraintViolation::getMessage)
+                    .collect(Collectors.toList())));
+        
     }
 
     @GET
@@ -94,10 +93,10 @@ public class ProductResource {
     })
     public Uni<Response> getProductBySku(@PathParam("sku") String sku) {
         String traceId = MDC.get("X-Trace-Id") != null ? MDC.get("X-Trace-Id").toString() : "N/A";
-        log.info(String.format("[traceId=%s] Recebida requisição para buscar produto por SKU: %s", traceId, sku));
+        log.info(String.format("Recebida requisição para buscar produto por SKU: %s", traceId, sku));
         return productService.getBySku(sku)
                 .onItem().transform(i -> {
-                    log.info(String.format("[traceId=%s] Produto encontrado: sku=%s, nome=%s", traceId, i.getSku(), i.getName()));
+                    log.info(String.format("Produto encontrado: sku=%s, nome=%s", traceId, i.getSku(), i.getName()));
                     return Response.ok(i).build();
                 });
     }
