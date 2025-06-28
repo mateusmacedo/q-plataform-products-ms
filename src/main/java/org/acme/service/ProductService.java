@@ -49,26 +49,23 @@ public class ProductService {
         String traceId = MDC.get("X-Trace-Id") != null ? MDC.get("X-Trace-Id").toString() : "N/A";
         log.infof("[traceId=%s] Iniciando criação de produto: sku=%s, nome=%s", traceId, input.getSku(),
                 input.getName());
+
         return productRepository.findBySkuOrName(input.getSku(), input.getName())
-                .flatMap(existingProduct -> {
-                    if (existingProduct != null) {
-                        log.errorf("[traceId=%s] Produto já existe: sku=%s, nome=%s", traceId, input.getSku(),
-                                input.getName());
-                        return Uni.createFrom().failure(
-                                new ProductAlreadyExistException(input.getSku(), input.getName()));
-                    }
-                    return Panache.withTransaction(new Product(input.getSku(), input.getName())::persist)
-                            .invoke(productPersisted -> log.infof(
-                                    "[traceId=%s] Produto persistido: id=%s, sku=%s, nome=%s", traceId,
-                                    ((Product) productPersisted).id, ((Product) productPersisted).sku,
-                                    ((Product) productPersisted).name))
-                            .invoke(productPersisted -> {
-                                productOutProducer.send(ProductOutputDTO.fromEntity((Product) productPersisted));
-                                log.infof("[traceId=%s] Evento enviado para Kafka: id=%s, sku=%s", traceId,
-                                        ((Product) productPersisted).id, ((Product) productPersisted).sku);
-                            })
-                            .map(productPersisted -> ProductOutputDTO.fromEntity((Product) productPersisted));
-                });
+            .onItem().ifNotNull().failWith(() -> new ProductAlreadyExistException(input.getSku(), input.getName()))
+            .onItem().ifNull().continueWith(() -> new Product(input.getSku(), input.getName()))
+            .flatMap(product -> Panache.withTransaction(product::persist))
+            .onItem().invoke(productPersisted -> {
+                log.infof("[traceId=%s] Produto persistido: id=%s, sku=%s, nome=%s", traceId,
+                        ((Product) productPersisted).id, ((Product) productPersisted).sku,
+                        ((Product) productPersisted).name);
+                productOutProducer.send(ProductOutputDTO.fromEntity((Product) productPersisted));
+                log.infof("[traceId=%s] Evento enviado para Kafka: id=%s, sku=%s", traceId,
+                        ((Product) productPersisted).id, ((Product) productPersisted).sku);
+            })
+            .map(productPersisted -> ProductOutputDTO.fromEntity((Product) productPersisted))
+            .onFailure().invoke(throwable -> {
+                log.errorf("[traceId=%s] Erro ao criar produto: %s", traceId, throwable.getMessage());
+            });
     }
 
     public Uni<ProductOutputDTO> getBySku(String sku) {
