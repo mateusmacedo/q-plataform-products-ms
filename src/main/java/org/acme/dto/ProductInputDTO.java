@@ -1,4 +1,4 @@
-package org.acme;
+package org.acme.dto;
 
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.Pattern;

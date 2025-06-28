@@ -1,4 +1,4 @@
-package org.acme;
+package org.acme.resource;
 
 import java.net.URI;
 import java.util.Set;
@@ -17,6 +17,11 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
+import org.acme.exception.ProductValidationException;
+import org.acme.dto.ProductErrorDTO;
+import org.acme.dto.ProductInputDTO;
+import org.acme.dto.ProductOutputDTO;
+import org.acme.service.ProductService;
 import org.eclipse.microprofile.openapi.annotations.Operation;
 import org.eclipse.microprofile.openapi.annotations.media.Content;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;

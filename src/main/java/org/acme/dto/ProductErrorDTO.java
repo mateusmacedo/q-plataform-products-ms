@@ -1,10 +1,11 @@
-package org.acme;
+package org.acme.dto;
 
 import java.util.List;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.acme.exception.ApiException;
 
 @Data
 @AllArgsConstructor

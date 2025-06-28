@@ -1,4 +1,4 @@
-package org.acme;
+package org.acme.dto;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -7,6 +7,7 @@ import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.acme.model.Product;
 
 @Data
 @AllArgsConstructor

@@ -1,13 +1,11 @@
-package org.acme;
+package org.acme.exception;
 
+import org.acme.dto.ProductErrorDTO;
+
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.ExceptionMapper;
 import javax.ws.rs.ext.Provider;
-import javax.ws.rs.core.MediaType;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 
 @Provider
 public class ProductExceptionMapper {
@@ -53,10 +51,9 @@ public class ProductExceptionMapper {
         @Override
         public Response toResponse(Exception exception) {
             ProductErrorDTO error = new ProductErrorDTO(
-                "Erro interno do servidor",
-                "INTERNAL_SERVER_ERROR",
-                java.util.List.of(exception.getMessage())
-            );
+                    "Erro interno do servidor",
+                    "INTERNAL_SERVER_ERROR",
+                    java.util.List.of(exception.getMessage()));
             exception.printStackTrace(); // Logar stacktrace para troubleshooting
             return Response.status(500)
                     .entity(error)

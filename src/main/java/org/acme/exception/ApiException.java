@@ -1,4 +1,6 @@
-package org.acme;
+package org.acme.exception;
+
+import lombok.Getter;
 
 import java.util.List;
 
@@ -9,10 +11,17 @@ import javax.ws.rs.core.Response;
  * Exceção base para erros de API, permitindo código de erro e detalhes customizados.
  * Pode ser estendida para exceções específicas do domínio.
  */
+@Getter
 public abstract class ApiException extends WebApplicationException {
-    /** Código de erro customizado para rastreamento. */
+    /** Código de erro customizado para rastreamento.
+     * -- GETTER --
+     *  Retorna o código de erro customizado.
+     */
     private final String errorCode;
-    /** Detalhes adicionais do erro. */
+    /** Detalhes adicionais do erro.
+     * -- GETTER --
+     *  Retorna detalhes adicionais do erro.
+     */
     private final List<String> details;
 
     /**
@@ -37,15 +46,6 @@ public abstract class ApiException extends WebApplicationException {
     public ApiException(String message, String errorCode, Response.Status status) {
         this(message, errorCode, null, status);
     }
-
-    /**
-     * Retorna o código de erro customizado.
-     */
-    public String getErrorCode() { return errorCode; }
-    /**
-     * Retorna detalhes adicionais do erro.
-     */
-    public List<String> getDetails() { return details; }
 
     @Override
     public String toString() {

@@ -1,4 +1,4 @@
-package org.acme;
+package org.acme.model;
 
 import javax.persistence.Cacheable;
 import javax.persistence.Column;

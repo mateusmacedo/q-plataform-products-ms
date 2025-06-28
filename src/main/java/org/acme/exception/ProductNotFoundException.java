@@ -1,4 +1,4 @@
-package org.acme;
+package org.acme.exception;
 
 import java.util.List;
 

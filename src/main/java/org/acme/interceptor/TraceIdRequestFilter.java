@@ -1,4 +1,4 @@
-package org.acme;
+package org.acme.interceptor;
 
 import javax.ws.rs.client.ClientRequestContext;
 import javax.ws.rs.client.ClientRequestFilter;

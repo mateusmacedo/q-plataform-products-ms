@@ -1,4 +1,4 @@
-package org.acme;
+package org.acme.interceptor;
 
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.container.ContainerRequestFilter;
@@ -34,5 +34,6 @@ public class TraceIdInterceptor implements ContainerRequestFilter, ContainerResp
         if (traceId != null) {
             responseContext.getHeaders().add("X-Trace-Id", traceId);
         }
+        MDC.clear();
     }
 }

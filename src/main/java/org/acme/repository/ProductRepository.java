@@ -1,9 +1,10 @@
-package org.acme;
+package org.acme.repository;
 
 import javax.enterprise.context.ApplicationScoped;
 
 import io.quarkus.hibernate.reactive.panache.PanacheRepository;
 import io.smallrye.mutiny.Uni;
+import org.acme.model.Product;
 
 @ApplicationScoped
 public class ProductRepository implements PanacheRepository<Product> {
